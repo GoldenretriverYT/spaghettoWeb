@@ -34,23 +34,31 @@
 </head>
 <body>
     (>s
+        // Load the comments.csv file - this doesn't actually open any handles.
         var file = File.new("comments.csv");
 
+        // Check if the file doesn't exist
         if(not file.exists()) {
-            file.create();
+            file.create(); // Create the file, as it doesn't exist.
         }
 
+        // If the request is a post request, append the new data into the CSV file
         if(req.method == "POST") {
             file.append(req.body#"username" + "," + req.body#"content" + "\n");
-            print("<script>alert('Comment sent!');</script>")
+            print("<script>alert('Comment sent!');</script>"); // Insert a script tag telling the user that his comment was sent
         }
 
+        // Read CSV file
         var rawData = file.read();
+        // Split into seperate entries, seperated by a new line
         var lines = rawData.split("\n");
         
+        // Iterate through the lines
         for i = 0 while i < lines.size() step 1 {
+            // Split the single CSV entry by the seperator, which is the COMMA.
             var commentData = (lines#i).split(",");
 
+            // If the comment data actually contains anything, add it to the page.
             if(commentData.size() != 1) {
                 print("<span class=\"username\">" + commentData#0 + ":</span> " + commentData#1 + "<br>");
             }
