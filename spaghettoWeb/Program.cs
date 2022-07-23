@@ -16,6 +16,7 @@ namespace spaghettoWeb {
             SpaghettoBridge bridge = new();
             bridge.Register("Request", RequestClass.@class);
             bridge.Register("Response", ResponseClass.@class);
+            bridge.Register("Encryption", EncryptionClass.@class);
 
             bridge.Register("log", new NativeFunction("log", (List<Value> args, Position posStart, Position posEnd, Context ctx) => {
                 Console.WriteLine((args[0] as StringValue).value);
