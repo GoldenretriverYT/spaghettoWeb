@@ -72,6 +72,7 @@ namespace spaghettoWeb {
 
                     if (File.Exists(pathWithSuffix)) {
                         ClassInstance spagReq = new(RequestClass.@class, new Position(0, 0, 0, "internal", "internal"), new Position(0, 0, 0, "internal", "internal"), new() { new Number(0) });
+                        spagReq.instanceValues.Add("path", new StringValue(pathWithSuffix));
                         spagReq.hiddenValues.Add("req", req);
 
                         ClassInstance spagRes = new(ResponseClass.@class, new Position(0, 0, 0, "internal", "internal"), new Position(0, 0, 0, "internal", "internal"),new() { new Number(0) });
