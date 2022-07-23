@@ -65,13 +65,16 @@ namespace spaghettoWeb {
                 string filePath = System.IO.Path.Combine("www", req.Url.AbsolutePath.Substring(1));
                 Console.WriteLine("Reading " + filePath);
 
+                Position intPosStart = new Position(0, 0, 0, "internal", "Value defined from SpaghettoWeb and not from your code");
+                Position intPosEnd = new Position(54, 0, 54, "internal", "Value defined from SpaghettoWeb and not from your code");
+
                 List<string> suffixes = new() { "", ".html", ".spag", "index.html", "index.spag", "/index.html", "/index.spag" };
 
                 foreach (string suffix in suffixes) {
                     string pathWithSuffix = filePath + suffix;
 
                     if (File.Exists(pathWithSuffix)) {
-                        ClassInstance spagReq = new(RequestClass.@class, new Position(0, 0, 0, "internal", "internal"), new Position(0, 0, 0, "internal", "internal"), new() { new Number(0) });
+                        ClassInstance spagReq = new(RequestClass.@class, intPosStart, intPosEnd, new() { new Number(0) });
                         spagReq.instanceValues.Add("path", new StringValue(pathWithSuffix));
                         spagReq.instanceValues.Add("method", new StringValue(req.HttpMethod));
                         spagReq.instanceValues.Add("args", new DictionaryValue(new()));
@@ -80,7 +83,7 @@ namespace spaghettoWeb {
 
 
                         foreach (string s in req.QueryString) {
-                            (spagReq.instanceValues.Get("args") as DictionaryValue).value.Add(new StringValue(s), new StringValue(req.QueryString[s]));
+                            (spagReq.instanceValues.Get("args") as DictionaryValue).value.Add(new StringValue(s).SetPosition(intPosStart, intPosEnd), new StringValue(req.QueryString[s]));
                         }
 
                         if(req.HasEntityBody) {
@@ -99,8 +102,8 @@ namespace spaghettoWeb {
                                 foreach(string part in parts) {
                                     string[] urlEncodedData = part.Split("=");
                                     if (urlEncodedData.Length == 0) continue;
-                                    if (urlEncodedData.Length == 1) (spagReq.instanceValues.Get("body") as DictionaryValue).value.Add(new StringValue(urlEncodedData[0]), new Number(0));
-                                    if (urlEncodedData.Length == 2) (spagReq.instanceValues.Get("body") as DictionaryValue).value.Add(new StringValue(urlEncodedData[0]), new StringValue(urlEncodedData[1]));
+                                    if (urlEncodedData.Length == 1) (spagReq.instanceValues.Get("body") as DictionaryValue).value.Add(new StringValue(urlEncodedData[0]).SetPosition(intPosStart, intPosEnd), new Number(0));
+                                    if (urlEncodedData.Length == 2) (spagReq.instanceValues.Get("body") as DictionaryValue).value.Add(new StringValue(urlEncodedData[0]).SetPosition(intPosStart, intPosEnd), new StringValue(urlEncodedData[1]));
                                 }
                             }
                         }
