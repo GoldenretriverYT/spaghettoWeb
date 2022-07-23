@@ -11,8 +11,8 @@ To then use spaghetto inside your website, use this syntax:
 <)
 ```
 
-### How to get body data/query args
-Currently, there is no way to get query params by name. As stupid as it sounds, there is no Dictionary/DataCollection type in spaghetto. I will add it soon, and then I will add proper query params support. Currently, you will get those in order in the following list: `req.args`. Also, there is no way at all to read any body data. This will be added very soon aswell. Remember that this server is in very early development stage.
+### Why do my post arguments not appear in req.body?
+As of now, only simple url-encoded bodies are supported. If you want, you could manually parse the req.bodyRaw property.
 
 # Quick example page
 ```
