@@ -11,6 +11,9 @@ To then use spaghetto inside your website, use this syntax:
 <)
 ```
 
+### How to get body data/query args
+Currently, there is no way to get query params by name. As stupid as it sounds, there is no Dictionary/DataCollection type in spaghetto. I will add it soon, and then I will add proper query params support. Currently, you will get those in order in the following list: `req.args`. Also, there is no way at all to read any body data. This will be added very soon aswell. Remember that this server is in very early development stage.
+
 # Quick example page
 ```
 <!DOCTYPE html>
@@ -22,6 +25,10 @@ To then use spaghetto inside your website, use this syntax:
 		print("<h1>Welcome to SpaghettoWeb!</h1>");
 		print("<address>Random value: " + Math.random().toString() + "</address>");
 		print(req.path);
+		
+		if(req.args.size() > 0) {
+			print("<br>The first argument passed in is: " + req.args#0);
+		}
 	<)
 </body>
 ```
