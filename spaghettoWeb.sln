@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.2.32616.157
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "spaghettoWeb", "spaghettoWeb\spaghettoWeb.csproj", "{6026C6FD-D7D0-44CD-9854-24091B448102}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "spaghetto", "..\spaghetto\spaghetto\spaghetto.csproj", "{563B94C4-7AA0-47BE-9AB3-092118901179}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{6026C6FD-D7D0-44CD-9854-24091B448102}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6026C6FD-D7D0-44CD-9854-24091B448102}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6026C6FD-D7D0-44CD-9854-24091B448102}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6026C6FD-D7D0-44CD-9854-24091B448102}.Release|Any CPU.Build.0 = Release|Any CPU
+		{563B94C4-7AA0-47BE-9AB3-092118901179}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{563B94C4-7AA0-47BE-9AB3-092118901179}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{563B94C4-7AA0-47BE-9AB3-092118901179}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{563B94C4-7AA0-47BE-9AB3-092118901179}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {74846B25-0631-4EAE-910B-FD9A9618D072}
+	EndGlobalSection
+EndGlobal
