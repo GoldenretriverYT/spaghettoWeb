@@ -3,6 +3,7 @@ using spaghetto;
 using spaghettoWeb.classes;
 using System.Net;
 using System.Text;
+using System.Web;
 
 namespace spaghettoWeb {
     internal class Program {
@@ -83,7 +84,7 @@ namespace spaghettoWeb {
 
 
                         foreach (string s in req.QueryString) {
-                            (spagReq.instanceValues.Get("args") as DictionaryValue).value.Add(new StringValue(s).SetPosition(intPosStart, intPosEnd), new StringValue(req.QueryString[s]));
+                            (spagReq.instanceValues.Get("args") as DictionaryValue).value.Add(new StringValue(s).SetPosition(intPosStart, intPosEnd), new StringValue(HttpUtility.UrlDecode(req.QueryString[s])));
                         }
 
                         if(req.HasEntityBody) {
@@ -103,7 +104,7 @@ namespace spaghettoWeb {
                                     string[] urlEncodedData = part.Split("=");
                                     if (urlEncodedData.Length == 0) continue;
                                     if (urlEncodedData.Length == 1) (spagReq.instanceValues.Get("body") as DictionaryValue).value.Add(new StringValue(urlEncodedData[0]).SetPosition(intPosStart, intPosEnd), new Number(0));
-                                    if (urlEncodedData.Length == 2) (spagReq.instanceValues.Get("body") as DictionaryValue).value.Add(new StringValue(urlEncodedData[0]).SetPosition(intPosStart, intPosEnd), new StringValue(urlEncodedData[1]));
+                                    if (urlEncodedData.Length == 2) (spagReq.instanceValues.Get("body") as DictionaryValue).value.Add(new StringValue(urlEncodedData[0]).SetPosition(intPosStart, intPosEnd), new StringValue(HttpUtility.UrlDecode(urlEncodedData[1])));
                                 }
                             }
                         }
@@ -126,7 +127,7 @@ namespace spaghettoWeb {
                                     readingSpaghetto = true;
                                     spaghetto = "";
                                 }else {
-                                    await resp.OutputStream.WriteAsync(line);
+                                    await resp.OutputStream.WriteAsync(line + "\n");
                                 }
                             }else {
                                 if(line.Trim() == "<)") {
@@ -136,7 +137,7 @@ namespace spaghettoWeb {
                                     (RuntimeResult res, SpaghettoException err) = Intepreter.Run("<spaghettoweb>", spaghetto);
 
                                     if (err != null) {
-                                        resp.OutputStream.WriteAsync(GenerateErrorPage("500 - Internal Server Error", "Internal server error occurred."));
+                                        await resp.OutputStream.WriteAsync(GenerateErrorPage("500 - Internal Server Error", "Internal server error occurred."));
                                         Console.WriteLine(err.Message);
                                     }
                                 }else {

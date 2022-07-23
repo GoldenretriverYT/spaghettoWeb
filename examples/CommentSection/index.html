@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comments</title>
+
+    <style>
+        * {
+            font-family: Arial;
+        }
+
+        input {
+            border: 2px solid black;
+            border-radius: 5px;
+            width: 400px;
+            height: 30px;
+            display: block;
+        
+            -moz-box-sizing:border-box;
+            -webkit-box-sizing:border-box;
+            box-sizing:border-box;
+        }
+
+        input + input {
+            border-top: none;
+        }
+
+        .username {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    (>s
+        var file = File.new("comments.csv");
+
+        if(not file.exists()) {
+            file.create();
+        }
+
+        if(req.method == "POST") {
+            file.append(req.body#"username" + "," + req.body#"content" + "\n");
+            print("<script>alert('Comment sent!');</script>")
+        }
+
+        var rawData = file.read();
+        var lines = rawData.split("\n");
+        
+        for i = 0 while i < lines.size() step 1 {
+            var commentData = (lines#i).split(",");
+
+            if(commentData.size() != 1) {
+                print("<span class=\"username\">" + commentData#0 + ":</span> " + commentData#1 + "<br>");
+            }
+        }
+    <)
+
+    
+    <h3>Write your own comment!</h3>
+    <form method="post" action="">
+        <input type="text" name="username" placeholder="Username">
+        <input type="text" name="content" placeholder="Content">
+        <input type="submit" style="margin-top: 5px; border-top: 2px solid black;">
+    </form>
+</body>
+</html>
