@@ -82,9 +82,14 @@ namespace spaghettoWeb {
 
                         if(req.HasEntityBody) {
                             string text;
+                            
                             using (var reader = new StreamReader(req.InputStream,
                                                                  req.ContentEncoding)) {
                                 text = reader.ReadToEnd();
+                            }
+
+                            if(req.ContentType == "application/json") {
+
                             }
                         }
 
@@ -120,7 +125,7 @@ namespace spaghettoWeb {
                                         Console.WriteLine(err.Message);
                                     }
                                 }else {
-                                    spaghetto += line;
+                                    spaghetto += line + "\n";
                                 }
                             }
                         }
