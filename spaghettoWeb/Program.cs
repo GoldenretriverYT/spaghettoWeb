@@ -73,6 +73,21 @@ namespace spaghettoWeb {
                     if (File.Exists(pathWithSuffix)) {
                         ClassInstance spagReq = new(RequestClass.@class, new Position(0, 0, 0, "internal", "internal"), new Position(0, 0, 0, "internal", "internal"), new() { new Number(0) });
                         spagReq.instanceValues.Add("path", new StringValue(pathWithSuffix));
+                        spagReq.instanceValues.Add("method", new StringValue(req.HttpMethod));
+                        spagReq.instanceValues.Add("args", new ListValue(new List<Value>()));
+                        
+                        foreach(string s in req.QueryString) {
+                            (spagReq.instanceValues.Get("args") as ListValue).value.Add(new StringValue(req.QueryString[s]));
+                        }
+
+                        if(req.HasEntityBody) {
+                            string text;
+                            using (var reader = new StreamReader(req.InputStream,
+                                                                 req.ContentEncoding)) {
+                                text = reader.ReadToEnd();
+                            }
+                        }
+
                         spagReq.hiddenValues.Add("req", req);
 
                         ClassInstance spagRes = new(ResponseClass.@class, new Position(0, 0, 0, "internal", "internal"), new Position(0, 0, 0, "internal", "internal"),new() { new Number(0) });
