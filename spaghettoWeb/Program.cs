@@ -74,10 +74,13 @@ namespace spaghettoWeb {
                         ClassInstance spagReq = new(RequestClass.@class, new Position(0, 0, 0, "internal", "internal"), new Position(0, 0, 0, "internal", "internal"), new() { new Number(0) });
                         spagReq.instanceValues.Add("path", new StringValue(pathWithSuffix));
                         spagReq.instanceValues.Add("method", new StringValue(req.HttpMethod));
-                        spagReq.instanceValues.Add("args", new ListValue(new List<Value>()));
-                        
-                        foreach(string s in req.QueryString) {
-                            (spagReq.instanceValues.Get("args") as ListValue).value.Add(new StringValue(req.QueryString[s]));
+                        spagReq.instanceValues.Add("args", new DictionaryValue(new()));
+                        spagReq.instanceValues.Add("body", new DictionaryValue(new()));
+                        spagReq.instanceValues.Add("bodyRaw", new Number(0));
+
+
+                        foreach (string s in req.QueryString) {
+                            (spagReq.instanceValues.Get("args") as DictionaryValue).value.Add(new StringValue(s), new StringValue(req.QueryString[s]));
                         }
 
                         if(req.HasEntityBody) {
@@ -88,8 +91,17 @@ namespace spaghettoWeb {
                                 text = reader.ReadToEnd();
                             }
 
-                            if(req.ContentType == "application/json") {
+                            spagReq.instanceValues.Set("bodyRaw", new StringValue(text));
 
+                            if(req.ContentType == "application/x-www-form-urlencoded") {
+                                string[] parts = text.Split("&");
+
+                                foreach(string part in parts) {
+                                    string[] urlEncodedData = part.Split("=");
+                                    if (urlEncodedData.Length == 0) continue;
+                                    if (urlEncodedData.Length == 1) (spagReq.instanceValues.Get("body") as DictionaryValue).value.Add(new StringValue(urlEncodedData[0]), new Number(0));
+                                    if (urlEncodedData.Length == 2) (spagReq.instanceValues.Get("body") as DictionaryValue).value.Add(new StringValue(urlEncodedData[0]), new StringValue(urlEncodedData[1]));
+                                }
                             }
                         }
 
