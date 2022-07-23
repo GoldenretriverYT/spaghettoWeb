@@ -18,17 +18,33 @@ Currently, there is no way to get query params by name. As stupid as it sounds, 
 ```
 <!DOCTYPE html>
 <head>
-	<title>Welcome</title>
+    <title>Welcome</title>
 </head>
 <body>
-	(>s
-		print("<h1>Welcome to SpaghettoWeb!</h1>");
-		print("<address>Random value: " + Math.random().toString() + "</address>");
-		print(req.path);
-		
-		if(req.args.size() > 0) {
-			print("<br>The first argument passed in is: " + req.args#0);
-		}
-	<)
+    <h3>Get Form</h3>
+    <form method="get" action="">
+        <input name="monke" placeholder="Your epic form value"/>
+        <input type="submit">
+    </form>
+    
+    <h3>Post Form</h3>
+    <form method="post" action="">
+        <input name="hello" placeholder="Your epic form value"/>
+        <input type="submit">
+    </form>
+    
+    (>s
+        print("<h1>Welcome to SpaghettoWeb!</h1>");
+        print("<address>Random value: " + Math.random().toString() + "</address>");
+        print(req.path);
+        
+        if(req.args.hasKey("monke")) {
+            print("<br>The get form value passed in is: " + req.args#"monke");
+        }
+        
+        if(req.body.hasKey("hello")) {
+            print("<br>The post form value passed in is: " + req.body#"hello");
+        }
+    <)
 </body>
 ```
