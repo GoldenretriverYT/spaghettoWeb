@@ -4,19 +4,34 @@ using spaghettoWeb.classes;
 using System.Net;
 using System.Text;
 using System.Web;
+using System.Security.Principal;
 
 namespace spaghettoWeb {
     internal class Program {
         public static HttpListener listener;
-        public static string url = "http://localhost:8000/";
+        public static string url = "http://*:8000/";
         public static string runLocation = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
 
         static void Main(string[] args) {
+            if(Environment.OSVersion.Platform == PlatformID.Win32NT) {
+                if(!IsAdministrator()) {
+                    url = "http://localhost:8000/";
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine($@"===============================================
+ATTENTION: Your website will not be available
+from outside your device/network, as the server
+was not started with administrative privileges.
+===============================================");
+                    Console.ResetColor();
+                }
+            }
+
             Console.WriteLine("Adding SpaghettoWeb methods");
             SpaghettoBridge bridge = new();
             bridge.Register("Request", RequestClass.@class);
             bridge.Register("Response", ResponseClass.@class);
             bridge.Register("Encryption", EncryptionClass.@class);
+            bridge.Register("MySQL", MySQLClass.@class);
 
             bridge.Register("log", new NativeFunction("log", (List<Value> args, Position posStart, Position posEnd, Context ctx) => {
                 Console.WriteLine((args[0] as StringValue).value);
@@ -28,16 +43,14 @@ namespace spaghettoWeb {
             Intepreter.globalSymbolTable.Remove("print");
 
             bridge.Register("print", new NativeFunction("print", (List<Value> args, Position posStart, Position posEnd, Context ctx) => {
-                ((Intepreter.globalSymbolTable.Get("res") as ClassInstance).hiddenValues["res"] as HttpListenerResponse).OutputStream.WriteAsync((args[0] as StringValue).value).Wait();
+                ((Intepreter.globalSymbolTable.Get("res") as ClassInstance).hiddenValues["res"] as HttpListenerResponse).OutputStream.WriteAsync(args[0].ToString()).Wait();
                 return new Number(0);
             }, new() { "text" }, false));
 
             Intepreter.globalSymbolTable.Remove("printLine");
 
             Intepreter.globalSymbolTable.Add("printLine", new NativeFunction("printLine", (List<Value> args, Position posStart, Position posEnd, Context ctx) => {
-                Console.WriteLine("[Warn] Using print line in SpaghettoWeb is not recommend. IT WONT INSERT A NEW LINE!");
-
-                ((Intepreter.globalSymbolTable.Get("res") as ClassInstance).hiddenValues["res"] as HttpListenerResponse).OutputStream.WriteAsync((args[0] as StringValue).value).Wait();
+                ((Intepreter.globalSymbolTable.Get("res") as ClassInstance).hiddenValues["res"] as HttpListenerResponse).OutputStream.WriteAsync(args[0] + "\n").Wait();
                 return new Number(0);
             }, new() { "text" }, false));
 
@@ -52,6 +65,13 @@ namespace spaghettoWeb {
 
             // Close the listener
             listener.Close();
+        }
+
+        public static bool IsAdministrator() {
+            using (WindowsIdentity identity = WindowsIdentity.GetCurrent()) {
+                WindowsPrincipal principal = new WindowsPrincipal(identity);
+                return principal.IsInRole(WindowsBuiltInRole.Administrator);
+            }
         }
 
         public static async Task HandleIncomingConnections() {
@@ -190,6 +210,20 @@ namespace spaghettoWeb {
 
         public static Task WriteAsync(this Stream stream, string str) {
             return stream.WriteAsync(str.GetBytes(), 0, str.Length);
+        }
+
+        public static TValue GetOrNull<TKey, TValue>(this Dictionary<TKey, TValue> dict, TKey key) {
+            if (dict.ContainsKey(key)) return dict[key];
+            return default(TValue);
+        }
+
+
+        public static string ReplaceFirst(this string text, string search, string replace) {
+            int pos = text.IndexOf(search);
+            if (pos < 0) {
+                return text;
+            }
+            return text.Substring(0, pos) + replace + text.Substring(pos + search.Length);
         }
     }
 }
