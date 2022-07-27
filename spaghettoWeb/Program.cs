@@ -5,12 +5,14 @@ using System.Net;
 using System.Text;
 using System.Web;
 using System.Security.Principal;
+using Newtonsoft.Json;
 
 namespace spaghettoWeb {
     internal class Program {
         public static HttpListener listener;
         public static string url = "http://*:8000/";
         public static string runLocation = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+        public static SessionDB sDb;
 
         static void Main(string[] args) {
             if(Environment.OSVersion.Platform == PlatformID.Win32NT) {
@@ -26,12 +28,21 @@ was not started with administrative privileges.
                 }
             }
 
+            if(!File.Exists("sessiondb.json"))
+            {
+                File.Create("sessiondb.json").Close();
+                File.WriteAllText("sessiondb.json", "{}");
+            }
+
+            sDb = JsonConvert.DeserializeObject<SessionDB>(File.ReadAllText("sessiondb.json"));
+
             Console.WriteLine("Adding SpaghettoWeb methods");
             SpaghettoBridge bridge = new();
             bridge.Register("Request", RequestClass.@class);
             bridge.Register("Response", ResponseClass.@class);
             bridge.Register("Encryption", EncryptionClass.@class);
             bridge.Register("MySQL", MySQLClass.@class);
+            bridge.Register("Session", Session.@class);
 
             bridge.Register("log", new NativeFunction("log", (List<Value> args, Position posStart, Position posEnd, Context ctx) => {
                 Console.WriteLine((args[0] as StringValue).value);
