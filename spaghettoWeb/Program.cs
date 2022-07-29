@@ -10,15 +10,15 @@ using Newtonsoft.Json;
 namespace spaghettoWeb {
     internal class Program {
         public static HttpListener listener;
-        public static string url = "http://*:8000/";
+        public static string url = "http://*:{port}/";
         public static string runLocation = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
         public static SessionDB sDb;
         public static Config cfg;
 
         static void Main(string[] args) {
-            if(Environment.OSVersion.Platform == PlatformID.Win32NT) {
-                if(!IsAdministrator()) {
-                    url = "http://localhost:8000/";
+            if (Environment.OSVersion.Platform == PlatformID.Win32NT) {
+                if (!IsAdministrator()) {
+                    url = "http://localhost:{port}/";
                     Console.ForegroundColor = ConsoleColor.Red;
                     Console.WriteLine($@"===============================================
 ATTENTION: Your website will not be available
@@ -65,7 +65,7 @@ was not started with administrative privileges.
                 return new Number(0);
             }, new() { "text" }, false));
 
-            
+
             // Replace native prints
             Intepreter.globalSymbolTable.Remove("print");
 
@@ -82,9 +82,9 @@ was not started with administrative privileges.
             }, new() { "text" }, false));
 
             listener = new HttpListener();
-            listener.Prefixes.Add(url);
+            listener.Prefixes.Add(url.Replace("{port}", cfg.Port.ToString()));
             listener.Start();
-            Console.WriteLine("Listening for connections on {0}", url);
+            Console.WriteLine("Listening for connections on {0}", url.Replace("{port}", cfg.Port.ToString()));
 
             // Handle requests
             Task listenTask = HandleIncomingConnections();
@@ -105,108 +105,131 @@ was not started with administrative privileges.
             bool runServer = true;
 
             while (runServer) {
-                // Will wait here until we hear from a connection
-                HttpListenerContext ctx = await listener.GetContextAsync();
+                try
+                {
+                    // Will wait here until we hear from a connection
+                    HttpListenerContext ctx = await listener.GetContextAsync();
+                    string finalHtml = "";
 
-                // Peel out the requests and response objects
-                HttpListenerRequest req = ctx.Request;
-                HttpListenerResponse resp = ctx.Response;
-                string filePath = System.IO.Path.Combine("www", req.Url.AbsolutePath.Substring(1));
-                Console.WriteLine("Reading " + filePath);
+                    // Peel out the requests and response objects
+                    var req = ctx.Request;
+                    var res = ctx.Response;
+                    string filePath = System.IO.Path.Combine("www", req.Url.AbsolutePath.Substring(1));
 
-                Position intPosStart = new Position(0, 0, 0, "internal", "Value defined from SpaghettoWeb and not from your code");
-                Position intPosEnd = new Position(54, 0, 54, "internal", "Value defined from SpaghettoWeb and not from your code");
+                    Position intPosStart = new Position(0, 0, 0, "internal", "Value defined from SpaghettoWeb and not from your code");
+                    Position intPosEnd = new Position(54, 0, 54, "internal", "Value defined from SpaghettoWeb and not from your code");
 
-                List<string> suffixes = new() { "", ".html", ".spag", "index.html", "index.spag", "/index.html", "/index.spag" };
+                    List<string> suffixes = new() { "", ".html", ".spag", "index.html", "index.spag", "/index.html", "/index.spag" };
 
-                foreach (string suffix in suffixes) {
-                    string pathWithSuffix = filePath + suffix;
+                    foreach (string suffix in suffixes)
+                    {
+                        string pathWithSuffix = filePath + suffix;
 
-                    if (File.Exists(pathWithSuffix)) {
-                        ClassInstance spagReq = new(RequestClass.@class, intPosStart, intPosEnd, new() { new Number(0) });
-                        spagReq.instanceValues.Add("path", new StringValue(pathWithSuffix));
-                        spagReq.instanceValues.Add("method", new StringValue(req.HttpMethod));
-                        spagReq.instanceValues.Add("args", new DictionaryValue(new()));
-                        spagReq.instanceValues.Add("body", new DictionaryValue(new()));
-                        spagReq.instanceValues.Add("bodyRaw", new Number(0));
+                        if (File.Exists(pathWithSuffix))
+                        {
+                            ClassInstance spagReq = new(RequestClass.@class, intPosStart, intPosEnd, new() { new Number(0) });
+                            spagReq.instanceValues.Add("path", new StringValue(pathWithSuffix));
+                            spagReq.instanceValues.Add("method", new StringValue(req.HttpMethod));
+                            spagReq.instanceValues.Add("args", new DictionaryValue(new()));
+                            spagReq.instanceValues.Add("body", new DictionaryValue(new()));
+                            spagReq.instanceValues.Add("bodyRaw", new Number(0));
 
 
-                        foreach (string s in req.QueryString) {
-                            (spagReq.instanceValues.Get("args") as DictionaryValue).value.Add(new StringValue(s).SetPosition(intPosStart, intPosEnd), new StringValue(HttpUtility.UrlDecode(req.QueryString[s])));
-                        }
-
-                        if(req.HasEntityBody) {
-                            string text;
-                            
-                            using (var reader = new StreamReader(req.InputStream,
-                                                                 req.ContentEncoding)) {
-                                text = reader.ReadToEnd();
+                            foreach (string s in req.QueryString)
+                            {
+                                (spagReq.instanceValues.Get("args") as DictionaryValue).value.Add(new StringValue(s).SetPosition(intPosStart, intPosEnd), new StringValue(HttpUtility.UrlDecode(req.QueryString[s])));
                             }
 
-                            spagReq.instanceValues.Set("bodyRaw", new StringValue(text));
+                            if (req.HasEntityBody)
+                            {
+                                string text;
 
-                            if(req.ContentType == "application/x-www-form-urlencoded") {
-                                string[] parts = text.Split("&");
-
-                                foreach(string part in parts) {
-                                    string[] urlEncodedData = part.Split("=");
-                                    if (urlEncodedData.Length == 0) continue;
-                                    if (urlEncodedData.Length == 1) (spagReq.instanceValues.Get("body") as DictionaryValue).value.Add(new StringValue(urlEncodedData[0]).SetPosition(intPosStart, intPosEnd), new Number(0));
-                                    if (urlEncodedData.Length == 2) (spagReq.instanceValues.Get("body") as DictionaryValue).value.Add(new StringValue(urlEncodedData[0]).SetPosition(intPosStart, intPosEnd), new StringValue(HttpUtility.UrlDecode(urlEncodedData[1])));
+                                using (var reader = new StreamReader(req.InputStream,
+                                                                     req.ContentEncoding))
+                                {
+                                    text = reader.ReadToEnd();
                                 }
-                            }
-                        }
 
-                        spagReq.hiddenValues.Add("req", req);
+                                spagReq.instanceValues.Set("bodyRaw", new StringValue(text));
 
-                        ClassInstance spagRes = new(ResponseClass.@class, new Position(0, 0, 0, "internal", "internal"), new Position(0, 0, 0, "internal", "internal"),new() { new Number(0) });
-                        spagRes.hiddenValues.Add("res", resp);
+                                if (req.ContentType == "application/x-www-form-urlencoded")
+                                {
+                                    string[] parts = text.Split("&");
 
-                        Intepreter.globalSymbolTable.Add("req", spagReq);
-                        Intepreter.globalSymbolTable.Add("res", spagRes);
-
-                        string[] lines = File.ReadAllLines(pathWithSuffix);
-                        bool readingSpaghetto = false;
-                        string spaghetto = "";
-
-                        foreach(string line in lines) {
-                            if (!readingSpaghetto) {
-                                if (line.Trim() == "(>s") {
-                                    readingSpaghetto = true;
-                                    spaghetto = "";
-                                }else {
-                                    await resp.OutputStream.WriteAsync(line + "\n");
-                                }
-                            }else {
-                                if(line.Trim() == "<)") {
-                                    readingSpaghetto = false;
-
-                                    Console.WriteLine("Running spaghetto: " + spaghetto);
-                                    (RuntimeResult res, SpaghettoException err) = Intepreter.Run("<spaghettoweb>", spaghetto);
-
-                                    if (err != null) {
-                                        await resp.OutputStream.WriteAsync(GenerateErrorPage("500 - Internal Server Error", "Internal server error occurred."));
-                                        Console.WriteLine(err.Message);
+                                    foreach (string part in parts)
+                                    {
+                                        string[] urlEncodedData = part.Split("=");
+                                        if (urlEncodedData.Length == 0) continue;
+                                        if (urlEncodedData.Length == 1) (spagReq.instanceValues.Get("body") as DictionaryValue).value.Add(new StringValue(urlEncodedData[0]).SetPosition(intPosStart, intPosEnd), new Number(0));
+                                        if (urlEncodedData.Length == 2) (spagReq.instanceValues.Get("body") as DictionaryValue).value.Add(new StringValue(urlEncodedData[0]).SetPosition(intPosStart, intPosEnd), new StringValue(HttpUtility.UrlDecode(urlEncodedData[1])));
                                     }
-                                }else {
-                                    spaghetto += line + "\n";
                                 }
                             }
+
+                            spagReq.hiddenValues.Add("req", req);
+
+                            ClassInstance spagRes = new(ResponseClass.@class, new Position(0, 0, 0, "internal", "internal"), new Position(0, 0, 0, "internal", "internal"), new() { new Number(0) });
+                            spagRes.hiddenValues.Add("res", res);
+
+                            Intepreter.globalSymbolTable.Add("req", spagReq);
+                            Intepreter.globalSymbolTable.Add("res", spagRes);
+
+                            string[] lines = File.ReadAllLines(pathWithSuffix);
+                            bool readingSpaghetto = false;
+                            string spaghetto = "";
+
+                            foreach (string line in lines)
+                            {
+                                if (!readingSpaghetto)
+                                {
+                                    if (line.Trim() == (cfg.UseHTMLTagsInsteadOfCustomPrefix ? "<spaghetto>" : "(>s"))
+                                    {
+                                        readingSpaghetto = true;
+                                        spaghetto = "";
+                                    }
+                                    else
+                                    {
+                                        finalHtml += line + "\n";
+                                    }
+                                }
+                                else
+                                {
+                                    if (line.Trim() == (cfg.UseHTMLTagsInsteadOfCustomPrefix ? "</spaghetto>" : "<)"))
+                                    {
+                                        readingSpaghetto = false;
+
+                                        (RuntimeResult runtimeRes, SpaghettoException err) = Intepreter.Run("<spaghettoweb>", spaghetto);
+
+                                        if (err != null)
+                                        {
+                                            finalHtml = GenerateErrorPage("500 - Internal Server Error", "Internal server error occurred.");
+                                            Console.WriteLine(err.Message);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        spaghetto += line + "\n";
+                                    }
+                                }
+                            }
+
+                            Intepreter.globalSymbolTable.Remove("req");
+                            Intepreter.globalSymbolTable.Remove("res");
+                            goto finishRequest;
                         }
-                        
-                        resp.Close();
-
-                        Intepreter.globalSymbolTable.Remove("req");
-                        Intepreter.globalSymbolTable.Remove("res");
-                        goto finishRequest;
                     }
-                }
 
-                await resp.OutputStream.WriteAsync(GenerateErrorPage("404 - Not found", "Specified file not found."));
-                resp.Close();
+                    await res.OutputStream.WriteAsync(GenerateErrorPage("404 - Not found", "Specified file not found."));
+                    res.Close();
+                    continue;
 
                 finishRequest:
-                continue;
+                    await res.OutputStream.WriteAsync(finalHtml);
+                    res.Close();
+                }catch (Exception ex)
+                {
+                    Console.WriteLine("Request failed: " + ex.Message);
+                }
             }
         }
 

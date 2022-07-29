@@ -9,10 +9,15 @@ namespace spaghettoWeb
 {
     internal class Config
     {
-        [Comment("This option makes it so the opening and closing tags arent (>s and <) but rather <spaghetto> and </spaghetto>")]
+        [Comment("This option makes it so the opening and closing tags arent (>s and <) but rather <spaghetto> and </spaghetto> - Note that these tags still must be the only thing on a line!")]
         [ConfigBool()]
         [DefaultValue(false)]
         public bool UseHTMLTagsInsteadOfCustomPrefix { get; set; } = false;
+
+        [Comment("The port the server listens to")]
+        [ConfigInt(1, 65535)]
+        [DefaultValue(8000)]
+        public int Port { get; set; } = 8000;
     }
 
     internal class ConfigReader

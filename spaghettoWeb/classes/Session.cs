@@ -20,10 +20,17 @@ namespace spaghettoWeb.classes {
                 return new StringValue(data);
             }, new() { "self", "key" }, false) },
 
-
+            {
+                "getOrDefault",
+                new NativeFunction("getOrDefault", (List<Value> args, Position posStart, Position posEnd, Context ctx) => {
+                    if (!Program.sDb.TryGet((string)(args[0] as ClassInstance).hiddenValues["session"], (args[1] as StringValue).value, out string data))
+                        return args[2];
+                    return new StringValue(data);
+                }, new() { "self", "key", "default" }, false)
+            },
 
             { "set", new NativeFunction("set", (List<Value> args, Position posStart, Position posEnd, Context ctx) => {
-                if (!Program.sDb.TrySet((string)(args[0] as ClassInstance).hiddenValues["session"], (args[1] as StringValue).value, (args[2] as StringValue).value))
+                if (!Program.sDb.TrySet((string)(args[0] as ClassInstance).hiddenValues["session"], (args[1] as StringValue).value, (args[2]).ToString()))
                     throw new RuntimeError(posStart, posEnd, "Session does not exist.", ctx);
                 return new Number(0);
             }, new() { "self", "key", "value" }, false) }
@@ -37,21 +44,27 @@ namespace spaghettoWeb.classes {
             var self = (ctx.symbolTable.Get("this") as ClassInstance);
 
             HttpListenerRequest req = (HttpListenerRequest)(args[0] as ClassInstance).hiddenValues["req"];
+
             HttpListenerResponse res = (HttpListenerResponse)(args[1] as ClassInstance).hiddenValues["res"];
+
 
             if (req.Cookies["spSession"] == null)
             {
                 string s = GenerateSession();
-                Cookie ck = new Cookie("spSession", s, "/");
-                ck.Expires = DateTime.Now.AddDays(7);
+                Cookie ck = new Cookie("spSession", s, "/")
+                {
+                    Expires = DateTime.Now.AddDays(7)
+                };
+
                 Console.WriteLine("Generating new session: " + s);
-                res.SetCookie(ck);
+                res.AppendCookie(ck);
+
                 self.hiddenValues.Add("session", s);
                 Program.sDb.SessionData.Add(s, new());
                 Program.sDb.SaveSessionDB();
             }else
             {
-                self.hiddenValues.Add("session", req.Cookies["spSession"]);
+                self.hiddenValues.Add("session", req.Cookies["spSession"].Value);
             }
 
             return ctx.symbolTable.Get("this");
