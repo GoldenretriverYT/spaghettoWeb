@@ -34,7 +34,7 @@ namespace spaghettoWeb
 
         public void SaveSessionDB()
         {
-            File.WriteAllText("sessiondb.json", JsonConvert.SerializeObject(this));
+            File.WriteAllText("data/sessiondb.json", JsonConvert.SerializeObject(this));
         }
     }
 

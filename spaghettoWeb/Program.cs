@@ -13,6 +13,7 @@ namespace spaghettoWeb {
         public static string url = "http://*:8000/";
         public static string runLocation = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
         public static SessionDB sDb;
+        public static Config cfg;
 
         static void Main(string[] args) {
             if(Environment.OSVersion.Platform == PlatformID.Win32NT) {
@@ -28,13 +29,28 @@ was not started with administrative privileges.
                 }
             }
 
-            if(!File.Exists("sessiondb.json"))
+            if (!Directory.Exists("data")) Directory.CreateDirectory("data");
+            if (!Directory.Exists("www")) Directory.CreateDirectory("www");
+
+
+            if (!File.Exists("data/sessiondb.json"))
             {
-                File.Create("sessiondb.json").Close();
-                File.WriteAllText("sessiondb.json", "{}");
+                File.Create("data/sessiondb.json").Close();
+                File.WriteAllText("data/sessiondb.json", "{}");
             }
 
-            sDb = JsonConvert.DeserializeObject<SessionDB>(File.ReadAllText("sessiondb.json"));
+            if (!File.Exists("data/config.cfg"))
+            {
+                File.Create("data/config.cfg").Close();
+                File.WriteAllText("data/config.cfg", new ConfigReader("").CreateTemplate<Config>());
+            }
+
+            sDb = JsonConvert.DeserializeObject<SessionDB>(File.ReadAllText("data/sessiondb.json"));
+            cfg = new ConfigReader(File.ReadAllText("data/config.cfg")).ReadInto<Config>();
+
+            File.WriteAllText("data/config.cfg", new ConfigReader("").GenerateWithData<Config>(cfg));
+
+            Console.WriteLine(cfg.UseHTMLTagsInsteadOfCustomPrefix);
 
             Console.WriteLine("Adding SpaghettoWeb methods");
             SpaghettoBridge bridge = new();
