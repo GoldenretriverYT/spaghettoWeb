@@ -101,6 +101,8 @@ was not started with administrative privileges.
             }
         }
 
+        // TODO:
+        // FIX PRINT AND PRINTLINE (CURRENTLY NOT PRINTING!)
         public static async Task HandleIncomingConnections() {
             bool runServer = true;
 
@@ -109,11 +111,11 @@ was not started with administrative privileges.
                 {
                     // Will wait here until we hear from a connection
                     HttpListenerContext ctx = await listener.GetContextAsync();
-                    string finalHtml = "";
 
                     // Peel out the requests and response objects
                     var req = ctx.Request;
                     var res = ctx.Response;
+                    ClassInstance spagReq = null;
                     string filePath = System.IO.Path.Combine("www", req.Url.AbsolutePath.Substring(1));
 
                     Position intPosStart = new Position(0, 0, 0, "internal", "Value defined from SpaghettoWeb and not from your code");
@@ -127,7 +129,7 @@ was not started with administrative privileges.
 
                         if (File.Exists(pathWithSuffix))
                         {
-                            ClassInstance spagReq = new(RequestClass.@class, intPosStart, intPosEnd, new() { new Number(0) });
+                            spagReq = new(RequestClass.@class, intPosStart, intPosEnd, new() { new Number(0) });
                             spagReq.instanceValues.Add("path", new StringValue(pathWithSuffix));
                             spagReq.instanceValues.Add("method", new StringValue(req.HttpMethod));
                             spagReq.instanceValues.Add("args", new DictionaryValue(new()));
@@ -166,8 +168,9 @@ was not started with administrative privileges.
                                 }
                             }
 
+
                             spagReq.hiddenValues.Add("req", req);
-                            spagReq.hiddenValues.Add("finalHtml", finalHtml);
+                            spagReq.hiddenValues.Add("finalHtml", "");
 
                             ClassInstance spagRes = new(ResponseClass.@class, new Position(0, 0, 0, "internal", "internal"), new Position(0, 0, 0, "internal", "internal"), new() { new Number(0) });
                             spagRes.hiddenValues.Add("res", res);
@@ -190,7 +193,7 @@ was not started with administrative privileges.
                                     }
                                     else
                                     {
-                                        finalHtml += line + "\n";
+                                        (spagReq.hiddenValues["finalHtml"] as string) += line + "\n";
                                     }
                                 }
                                 else
@@ -203,7 +206,7 @@ was not started with administrative privileges.
 
                                         if (err != null)
                                         {
-                                            finalHtml = GenerateErrorPage("500 - Internal Server Error", "Internal server error occurred.");
+                                            (spagReq.hiddenValues["finalHtml"]) = GenerateErrorPage("500 - Internal Server Error", "Internal server error occurred.");
                                             Console.WriteLine(err.Message);
                                         }
                                     }
@@ -225,7 +228,7 @@ was not started with administrative privileges.
                     continue;
 
                 finishRequest:
-                    await res.OutputStream.WriteAsync(finalHtml);
+                    await res.OutputStream.WriteAsync(spagReq.hiddenValues["finalHtml"] as String);
                     res.Close();
                 }catch (Exception ex)
                 {
