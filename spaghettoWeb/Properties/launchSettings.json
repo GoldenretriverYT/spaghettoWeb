@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "spaghettoWeb": {
+      "commandName": "Project",
+      "commandLineArgs": "-p:MyRuntimeIdentifier=win-x64"
+    }
+  }
+}

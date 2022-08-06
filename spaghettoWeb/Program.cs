@@ -70,14 +70,14 @@ was not started with administrative privileges.
             Intepreter.globalSymbolTable.Remove("print");
 
             bridge.Register("print", new NativeFunction("print", (List<Value> args, Position posStart, Position posEnd, Context ctx) => {
-                ((Intepreter.globalSymbolTable.Get("res") as ClassInstance).hiddenValues["res"] as HttpListenerResponse).OutputStream.WriteAsync(args[0].ToString()).Wait();
+                (Intepreter.globalSymbolTable.Get("req") as ClassInstance).hiddenValues["finalHtml"] += args[0].ToString();
                 return new Number(0);
             }, new() { "text" }, false));
 
             Intepreter.globalSymbolTable.Remove("printLine");
 
             Intepreter.globalSymbolTable.Add("printLine", new NativeFunction("printLine", (List<Value> args, Position posStart, Position posEnd, Context ctx) => {
-                ((Intepreter.globalSymbolTable.Get("res") as ClassInstance).hiddenValues["res"] as HttpListenerResponse).OutputStream.WriteAsync(args[0] + "\n").Wait();
+                (Intepreter.globalSymbolTable.Get("req") as ClassInstance).hiddenValues["finalHtml"] += args[0].ToString() + "\n";
                 return new Number(0);
             }, new() { "text" }, false));
 
@@ -167,6 +167,7 @@ was not started with administrative privileges.
                             }
 
                             spagReq.hiddenValues.Add("req", req);
+                            spagReq.hiddenValues.Add("finalHtml", finalHtml);
 
                             ClassInstance spagRes = new(ResponseClass.@class, new Position(0, 0, 0, "internal", "internal"), new Position(0, 0, 0, "internal", "internal"), new() { new Number(0) });
                             spagRes.hiddenValues.Add("res", res);
