@@ -3,9 +3,15 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.2.32616.157
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "spaghettoWeb", "spaghettoWeb\spaghettoWeb.csproj", "{6026C6FD-D7D0-44CD-9854-24091B448102}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "spaghetto", "..\spaghetto\spaghetto\spaghetto.csproj", "{563B94C4-7AA0-47BE-9AB3-092118901179}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "spaghettoWeb", "spaghettoWeb\spaghettoWeb.csproj", "{9DB631A8-C52B-45BB-B3F5-D4DF4D9CDC24}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "spaghetto.Stdlib.Interop", "..\spaghetto\spaghetto.Stdlib.Interop\spaghetto.Stdlib.Interop.csproj", "{462EDBCD-889C-42EB-BAEC-9375C12EB01E}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "spaghetto.Stdlib.IO", "..\spaghetto\spaghetto.Stdlib.IO\spaghetto.Stdlib.IO.csproj", "{834AB7BB-520E-4067-8733-C696C071BF3A}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "spaghetto.Stdlib.Lang", "..\spaghetto\spaghetto.Stdlib.Lang\spaghetto.Stdlib.Lang.csproj", "{EB6604F5-C606-4888-9AF8-62C09B9A38BB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -13,14 +19,26 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{6026C6FD-D7D0-44CD-9854-24091B448102}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{6026C6FD-D7D0-44CD-9854-24091B448102}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{6026C6FD-D7D0-44CD-9854-24091B448102}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{6026C6FD-D7D0-44CD-9854-24091B448102}.Release|Any CPU.Build.0 = Release|Any CPU
 		{563B94C4-7AA0-47BE-9AB3-092118901179}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{563B94C4-7AA0-47BE-9AB3-092118901179}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{563B94C4-7AA0-47BE-9AB3-092118901179}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{563B94C4-7AA0-47BE-9AB3-092118901179}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9DB631A8-C52B-45BB-B3F5-D4DF4D9CDC24}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9DB631A8-C52B-45BB-B3F5-D4DF4D9CDC24}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9DB631A8-C52B-45BB-B3F5-D4DF4D9CDC24}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9DB631A8-C52B-45BB-B3F5-D4DF4D9CDC24}.Release|Any CPU.Build.0 = Release|Any CPU
+		{462EDBCD-889C-42EB-BAEC-9375C12EB01E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{462EDBCD-889C-42EB-BAEC-9375C12EB01E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{462EDBCD-889C-42EB-BAEC-9375C12EB01E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{462EDBCD-889C-42EB-BAEC-9375C12EB01E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{834AB7BB-520E-4067-8733-C696C071BF3A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{834AB7BB-520E-4067-8733-C696C071BF3A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{834AB7BB-520E-4067-8733-C696C071BF3A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{834AB7BB-520E-4067-8733-C696C071BF3A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EB6604F5-C606-4888-9AF8-62C09B9A38BB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EB6604F5-C606-4888-9AF8-62C09B9A38BB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EB6604F5-C606-4888-9AF8-62C09B9A38BB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EB6604F5-C606-4888-9AF8-62C09B9A38BB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

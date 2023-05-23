@@ -1,283 +1,176 @@
-﻿using CSSpaghettoLibBase;
+using Microsoft.AspNetCore.Components.Web;
 using spaghetto;
-using spaghettoWeb.classes;
-using System.Net;
-using System.Text;
-using System.Web;
-using System.Security.Principal;
-using Newtonsoft.Json;
+using System.Diagnostics;
 
-namespace spaghettoWeb {
-    internal class Program {
-        public static HttpListener listener;
-        public static string url = "http://*:{port}/";
-        public static string runLocation = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
-        public static SessionDB sDb;
-        public static Config cfg;
+namespace spaghettoWeb
+{
+    public class Program
+    {
+        public static void Main(string[] args)
+        {
+            if(!Directory.Exists("www")) {
+                Directory.CreateDirectory("www");
+            }
+            
+            var builder = WebApplication.CreateBuilder(args);
 
-        static void Main(string[] args) {
-            if (Environment.OSVersion.Platform == PlatformID.Win32NT) {
-                if (!IsAdministrator()) {
-                    url = "http://localhost:{port}/";
-                    Console.ForegroundColor = ConsoleColor.Red;
-                    Console.WriteLine($@"===============================================
-ATTENTION: Your website will not be available
-from outside your device/network, as the server
-was not started with administrative privileges.
-===============================================");
-                    Console.ResetColor();
+            // Add services to the container.
+            builder.Services.AddRazorPages();
+
+            var app = builder.Build();
+
+            // Configure the HTTP request pipeline.
+            if (!app.Environment.IsDevelopment()) {
+                app.UseExceptionHandler("/error");
+                // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+                app.UseHsts();
+            }
+
+            app.UseHttpsRedirection();
+            app.UseStaticFiles();
+
+            app.UseRouting();
+            
+            app.MapGet("/{*path}", Run);
+
+            app.UseAuthorization();
+
+            app.Run();
+        }
+
+        public static string Run(HttpContext context, string path = "")
+        {
+            // setup basic response
+            context.Response.ContentType = "text/html"; // this can be overrriden later on by the spaghetto code
+
+            string html = "";
+
+            if (File.Exists("www/" + path + ".spagw")) {
+                Console.WriteLine("spagw!");
+                html = File.ReadAllText("www/" + path + ".spagw");
+
+                // spagw files are spaghettoWeb files. The syntax is as follows:
+                // <% CONTROL FLOW %>
+                // <%= ESCAPED OUTPUT %>
+                // <%- NON-ESCAPED OUTPUT %>
+                // Everything outside of those tags are raw html content.
+
+                // Parse spagw
+                var nodes = Parser.Parse(html);
+                var spagToRun = "";
+                var output = "";
+                InterpreterResult res = new();
+
+                foreach (var node in nodes) spagToRun += node.GenerateSpaghetto();
+
+                // Define globals
+                // (yes, spaghetto usually doesnt do globals defined by default except true/false/null, but
+                // we also dont want people to have to import the web library everytime or something like that)
+                Interpreter interpreter = new();
+                spaghetto.Stdlib.Lang.Lib.Mount(interpreter.GlobalScope);
+                spaghetto.Stdlib.IO.Lib.Mount(interpreter.GlobalScope);
+                spaghetto.Stdlib.Interop.Lib.Mount(interpreter.GlobalScope);
+
+                interpreter.GlobalScope.Set("send",
+                     new SNativeFunction(
+                         impl: (Scope scope, List<SValue> args) =>
+                         {
+                            Debug.WriteLine("Send called!");
+                            output += args[0].ToSpagString().Value;
+                            return SInt.One;
+                         },
+                         expectedArgs: new List<string>() { "msg" }));
+
+                Debug.WriteLine(spagToRun);
+
+                try {
+                    interpreter.Interpret(spagToRun, ref res);
+
+                    return output;
+                } catch (Exception e) {
+                    return "Fatal error in spaghetto runtime: " + e.Message;
                 }
+            } else if (File.Exists("www/" + path)) {
+                html = File.ReadAllText("www/" + path);
+
+                // this is not a spagw file, send immediately
+                return html;
+            } else {
+                return "temp 404 page";
             }
-
-            if (!Directory.Exists("data")) Directory.CreateDirectory("data");
-            if (!Directory.Exists("www")) Directory.CreateDirectory("www");
-
-
-            if (!File.Exists("data/sessiondb.json"))
-            {
-                File.Create("data/sessiondb.json").Close();
-                File.WriteAllText("data/sessiondb.json", "{}");
-            }
-
-            if (!File.Exists("data/config.cfg"))
-            {
-                File.Create("data/config.cfg").Close();
-                File.WriteAllText("data/config.cfg", new ConfigReader("").CreateTemplate<Config>());
-            }
-
-            sDb = JsonConvert.DeserializeObject<SessionDB>(File.ReadAllText("data/sessiondb.json"));
-            cfg = new ConfigReader(File.ReadAllText("data/config.cfg")).ReadInto<Config>();
-
-            File.WriteAllText("data/config.cfg", new ConfigReader("").GenerateWithData<Config>(cfg));
-
-            Console.WriteLine(cfg.UseHTMLTagsInsteadOfCustomPrefix);
-
-            Console.WriteLine("Adding SpaghettoWeb methods");
-            SpaghettoBridge bridge = new();
-            bridge.Register("Request", RequestClass.@class);
-            bridge.Register("Response", ResponseClass.@class);
-            bridge.Register("Encryption", EncryptionClass.@class);
-            bridge.Register("MySQL", MySQLClass.@class);
-            bridge.Register("Session", Session.@class);
-
-            bridge.Register("log", new NativeFunction("log", (List<Value> args, Position posStart, Position posEnd, Context ctx) => {
-                Console.WriteLine((args[0] as StringValue).value);
-                return new Number(0);
-            }, new() { "text" }, false));
-
-
-            // Replace native prints
-            Intepreter.globalSymbolTable.Remove("print");
-
-            bridge.Register("print", new NativeFunction("print", (List<Value> args, Position posStart, Position posEnd, Context ctx) => {
-                (Intepreter.globalSymbolTable.Get("req") as ClassInstance).hiddenValues["finalHtml"] += args[0].ToString();
-                return new Number(0);
-            }, new() { "text" }, false));
-
-            Intepreter.globalSymbolTable.Remove("printLine");
-
-            Intepreter.globalSymbolTable.Add("printLine", new NativeFunction("printLine", (List<Value> args, Position posStart, Position posEnd, Context ctx) => {
-                (Intepreter.globalSymbolTable.Get("req") as ClassInstance).hiddenValues["finalHtml"] += args[0].ToString() + "\n";
-                return new Number(0);
-            }, new() { "text" }, false));
-
-            listener = new HttpListener();
-            listener.Prefixes.Add(url.Replace("{port}", cfg.Port.ToString()));
-            listener.Start();
-            Console.WriteLine("Listening for connections on {0}", url.Replace("{port}", cfg.Port.ToString()));
-
-            // Handle requests
-            Task listenTask = HandleIncomingConnections();
-            listenTask.GetAwaiter().GetResult();
-
-            // Close the listener
-            listener.Close();
-        }
-
-        public static bool IsAdministrator() {
-            using (WindowsIdentity identity = WindowsIdentity.GetCurrent()) {
-                WindowsPrincipal principal = new WindowsPrincipal(identity);
-                return principal.IsInRole(WindowsBuiltInRole.Administrator);
-            }
-        }
-
-        // TODO:
-        // FIX PRINT AND PRINTLINE (CURRENTLY NOT PRINTING!)
-        public static async Task HandleIncomingConnections() {
-            bool runServer = true;
-
-            while (runServer) {
-                try
-                {
-                    // Will wait here until we hear from a connection
-                    HttpListenerContext ctx = await listener.GetContextAsync();
-
-                    // Peel out the requests and response objects
-                    var req = ctx.Request;
-                    var res = ctx.Response;
-                    ClassInstance spagReq = null;
-                    string filePath = System.IO.Path.Combine("www", req.Url.AbsolutePath.Substring(1));
-
-                    Position intPosStart = new Position(0, 0, 0, "internal", "Value defined from SpaghettoWeb and not from your code");
-                    Position intPosEnd = new Position(54, 0, 54, "internal", "Value defined from SpaghettoWeb and not from your code");
-
-                    List<string> suffixes = new() { "", ".html", ".spag", "index.html", "index.spag", "/index.html", "/index.spag" };
-
-                    foreach (string suffix in suffixes)
-                    {
-                        string pathWithSuffix = filePath + suffix;
-
-                        if (File.Exists(pathWithSuffix))
-                        {
-                            spagReq = new(RequestClass.@class, intPosStart, intPosEnd, new() { new Number(0) });
-                            spagReq.instanceValues.Add("path", new StringValue(pathWithSuffix));
-                            spagReq.instanceValues.Add("method", new StringValue(req.HttpMethod));
-                            spagReq.instanceValues.Add("args", new DictionaryValue(new()));
-                            spagReq.instanceValues.Add("body", new DictionaryValue(new()));
-                            spagReq.instanceValues.Add("bodyRaw", new Number(0));
-
-
-                            foreach (string s in req.QueryString)
-                            {
-                                (spagReq.instanceValues.Get("args") as DictionaryValue).value.Add(new StringValue(s).SetPosition(intPosStart, intPosEnd), new StringValue(HttpUtility.UrlDecode(req.QueryString[s])));
-                            }
-
-                            if (req.HasEntityBody)
-                            {
-                                string text;
-
-                                using (var reader = new StreamReader(req.InputStream,
-                                                                     req.ContentEncoding))
-                                {
-                                    text = reader.ReadToEnd();
-                                }
-
-                                spagReq.instanceValues.Set("bodyRaw", new StringValue(text));
-
-                                if (req.ContentType == "application/x-www-form-urlencoded")
-                                {
-                                    string[] parts = text.Split("&");
-
-                                    foreach (string part in parts)
-                                    {
-                                        string[] urlEncodedData = part.Split("=");
-                                        if (urlEncodedData.Length == 0) continue;
-                                        if (urlEncodedData.Length == 1) (spagReq.instanceValues.Get("body") as DictionaryValue).value.Add(new StringValue(urlEncodedData[0]).SetPosition(intPosStart, intPosEnd), new Number(0));
-                                        if (urlEncodedData.Length == 2) (spagReq.instanceValues.Get("body") as DictionaryValue).value.Add(new StringValue(urlEncodedData[0]).SetPosition(intPosStart, intPosEnd), new StringValue(HttpUtility.UrlDecode(urlEncodedData[1])));
-                                    }
-                                }
-                            }
-
-
-                            spagReq.hiddenValues.Add("req", req);
-                            spagReq.hiddenValues.Add("finalHtml", "");
-
-                            ClassInstance spagRes = new(ResponseClass.@class, new Position(0, 0, 0, "internal", "internal"), new Position(0, 0, 0, "internal", "internal"), new() { new Number(0) });
-                            spagRes.hiddenValues.Add("res", res);
-
-                            Intepreter.globalSymbolTable.Add("req", spagReq);
-                            Intepreter.globalSymbolTable.Add("res", spagRes);
-
-                            string[] lines = File.ReadAllLines(pathWithSuffix);
-                            bool readingSpaghetto = false;
-                            string spaghetto = "";
-
-                            foreach (string line in lines)
-                            {
-                                if (!readingSpaghetto)
-                                {
-                                    if (line.Trim() == (cfg.UseHTMLTagsInsteadOfCustomPrefix ? "<spaghetto>" : "(>s"))
-                                    {
-                                        readingSpaghetto = true;
-                                        spaghetto = "";
-                                    }
-                                    else
-                                    {
-                                        (spagReq.hiddenValues["finalHtml"] as string) += line + "\n";
-                                    }
-                                }
-                                else
-                                {
-                                    if (line.Trim() == (cfg.UseHTMLTagsInsteadOfCustomPrefix ? "</spaghetto>" : "<)"))
-                                    {
-                                        readingSpaghetto = false;
-
-                                        (RuntimeResult runtimeRes, SpaghettoException err) = Intepreter.Run("<spaghettoweb>", spaghetto);
-
-                                        if (err != null)
-                                        {
-                                            (spagReq.hiddenValues["finalHtml"]) = GenerateErrorPage("500 - Internal Server Error", "Internal server error occurred.");
-                                            Console.WriteLine(err.Message);
-                                        }
-                                    }
-                                    else
-                                    {
-                                        spaghetto += line + "\n";
-                                    }
-                                }
-                            }
-
-                            Intepreter.globalSymbolTable.Remove("req");
-                            Intepreter.globalSymbolTable.Remove("res");
-                            goto finishRequest;
-                        }
-                    }
-
-                    await res.OutputStream.WriteAsync(GenerateErrorPage("404 - Not found", "Specified file not found."));
-                    res.Close();
-                    continue;
-
-                finishRequest:
-                    await res.OutputStream.WriteAsync(spagReq.hiddenValues["finalHtml"] as String);
-                    res.Close();
-                }catch (Exception ex)
-                {
-                    Console.WriteLine("Request failed: " + ex.Message);
-                }
-            }
-        }
-
-        public static string GenerateErrorPage(string errorTitle, string errorDescription) {
-            return $@"<!DOCTYPE html>
-<head>
-    <title>{errorTitle}</title>
-</head>
-<body>
-<h1>{errorTitle}</h1>
-<h4>{errorDescription}</h4>
-<hr>
-<address>SpaghettoWeb {GetAppVersion()} on {Environment.OSVersion.Platform} {Environment.OSVersion.Version}</address>
-</body>";
-        }
-
-        public static string GetAppVersion() {
-            System.Reflection.Assembly assembly = System.Reflection.Assembly.GetExecutingAssembly();
-            System.Diagnostics.FileVersionInfo fvi = System.Diagnostics.FileVersionInfo.GetVersionInfo(assembly.Location);
-            return fvi.FileVersion;
         }
     }
 
-    public static class ExtensionMethods {
-        public static byte[] GetBytes(this string str) {
-            return Encoding.UTF8.GetBytes(str);
+    class SpagWNode
+    {
+        public enum NodeType
+        {
+            Text,
+            SpagCodeOutput,
+            SpagCodeControlFlow
         }
+        
+        public List<SpagWNode> Children;
+        public NodeType Type;
+        public string Text;
+        public bool Escaped = false;
+        
+        public string GenerateSpaghetto()
+        {
+            switch(Type) {
+                case NodeType.Text:
+                    Text = Text.Replace("\"", "\\\"");
+                    Text = Text.Replace("\r\n", "\\n\" +\"");
+                    Text = Text.Replace("\n", "\\n\" +\"");
 
-        public static Task WriteAsync(this Stream stream, string str) {
-            return stream.WriteAsync(str.GetBytes(), 0, str.Length);
-        }
-
-        public static TValue GetOrNull<TKey, TValue>(this Dictionary<TKey, TValue> dict, TKey key) {
-            if (dict.ContainsKey(key)) return dict[key];
-            return default(TValue);
-        }
-
-
-        public static string ReplaceFirst(this string text, string search, string replace) {
-            int pos = text.IndexOf(search);
-            if (pos < 0) {
-                return text;
+                    return "send(\"" + Text + "\");";
+                case NodeType.SpagCodeOutput:
+                    if (Escaped) {
+                        return "send(escape(" + Text + "));";
+                    } else {
+                        return "send(" + Text + ");";
+                    }
+                case NodeType.SpagCodeControlFlow:
+                    return Text;
             }
-            return text.Substring(0, pos) + replace + text.Substring(pos + search.Length);
+
+            return "-1";
+        }
+    }
+
+    class Parser
+    {
+        public static List<SpagWNode> Parse(string input)
+        {
+            var nodes = new List<SpagWNode>();
+            while (input.Length > 0) {
+                if (input.StartsWith("<%-")) {
+                    // Non-escaped code output
+                    var idx = input.IndexOf("%>");
+                    if (idx == -1) throw new Exception("Expected %> after <%-");
+                    nodes.Add(new SpagWNode() { Type = SpagWNode.NodeType.SpagCodeOutput, Text = input.Substring(3, idx - 3) });
+                    input = input.Substring(idx + 2);
+                } else if (input.StartsWith("<%=")) {
+                    // Escaped code output
+                    var idx = input.IndexOf("%>");
+                    if (idx == -1) throw new Exception("Expected %> after <%= ");
+                    nodes.Add(new SpagWNode() { Type = SpagWNode.NodeType.SpagCodeOutput, Text = input.Substring(3, idx - 3), Escaped = true });
+                    input = input.Substring(idx + 2);
+                }else if (input.StartsWith("<%")) {
+                    // SpagCode
+                    var idx = input.IndexOf("%>");
+                    if (idx == -1) throw new Exception("Expected %> after <%");
+                    nodes.Add(new SpagWNode() { Type = SpagWNode.NodeType.SpagCodeControlFlow, Text = input.Substring(2, idx - 2) });
+                    input = input.Substring(idx + 2);
+                }  else {
+                    // Text
+                    var idx = input.IndexOf("<%");
+                    if (idx == -1) idx = input.Length;
+                    nodes.Add(new SpagWNode() { Type = SpagWNode.NodeType.Text, Text = input.Substring(0, idx) });
+                    input = input.Substring(idx);
+                }
+            }
+            return nodes;
         }
     }
 }
