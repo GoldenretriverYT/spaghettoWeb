@@ -9,11 +9,19 @@
 <body>
     <% 
         import native lang;
-        var test = ["HELLO", "WORLD"];
+        var test = ["HELLO", " WORLD", "!", " YAY"];
+        var hex = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", 
+                   "A", "B", "C", "D", "E", "F"];
+
+        func randomColor() {
+            var color = "#";
+            for(var i = 0; i < 6; i++) {
+                color += hex#int.rand(0, 16);
+            }
+            return color;
+        }
     %>
 
-    <% for(var i = 0; i < list.length(test); i++) { %>
-        <h1><%- test#i %></h1>
-    <% } %>
+    <% for(var i = 0; i < list.length(test); i++) { %><span style="color: <%-randomColor()%>;"><%- test#i %></span><% } %>
 </body>
 </html>

@@ -43,17 +43,8 @@ namespace spaghettoWeb
             // setup basic response
             context.Response.ContentType = "text/html"; // this can be overrriden later on by the spaghetto code
 
-            string html = "";
-
             if (File.Exists("www/" + path + ".spagw")) {
-                Console.WriteLine("spagw!");
-                html = File.ReadAllText("www/" + path + ".spagw");
-
-                // spagw files are spaghettoWeb files. The syntax is as follows:
-                // <% CONTROL FLOW %>
-                // <%= ESCAPED OUTPUT %>
-                // <%- NON-ESCAPED OUTPUT %>
-                // Everything outside of those tags are raw html content.
+                string html = File.ReadAllText("www/" + path + ".spagw");
 
                 // Parse spagw
                 var nodes = Parser.Parse(html);
@@ -90,11 +81,10 @@ namespace spaghettoWeb
                 } catch (Exception e) {
                     return "Fatal error in spaghetto runtime: " + e.Message;
                 }
-            } else if (File.Exists("www/" + path)) {
-                html = File.ReadAllText("www/" + path);
 
+            } else if (File.Exists("www/" + path)) {
                 // this is not a spagw file, send immediately
-                return html;
+                return File.ReadAllText("www/" + path);
             } else {
                 return "temp 404 page";
             }
