@@ -22,6 +22,12 @@
         }
     %>
 
-    <% for(var i = 0; i < list.length(test); i++) { %><span style="color: <%-randomColor()%>;"><%- test#i %></span><% } %>
-</body>
+    <% for(var i = 0; i < list.length(test); i++) {
+        %><span style="color: <%- randomColor() %>;"><%- test#i %></span><%
+    } %>
+    <br>
+    You also put <%- query#"test" %> as "test" query param.
+    <br>
+    The raw body is: <%- bodyString %>
+</body> 
 </html>

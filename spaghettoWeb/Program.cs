@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Components.Web;
 using spaghetto;
+using System.Buffers;
 using System.Diagnostics;
+using System.Text;
 
 namespace spaghettoWeb
 {
@@ -30,8 +32,9 @@ namespace spaghettoWeb
             app.UseStaticFiles();
 
             app.UseRouting();
-            
+
             app.MapGet("/{*path}", Run);
+            app.MapPost("/{*path}", Run);
 
             app.UseAuthorization();
 
@@ -54,7 +57,7 @@ namespace spaghettoWeb
 
                 foreach (var node in nodes) spagToRun += node.GenerateSpaghetto();
 
-                // Define globals
+                #region Define globals
                 // (yes, spaghetto usually doesnt do globals defined by default except true/false/null, but
                 // we also dont want people to have to import the web library everytime or something like that)
                 Interpreter interpreter = new();
@@ -62,16 +65,41 @@ namespace spaghettoWeb
                 spaghetto.Stdlib.IO.Lib.Mount(interpreter.GlobalScope);
                 spaghetto.Stdlib.Interop.Lib.Mount(interpreter.GlobalScope);
 
+                // Global Send Function
                 interpreter.GlobalScope.Set("send",
                      new SNativeFunction(
                          impl: (Scope scope, List<SValue> args) =>
                          {
-                            Debug.WriteLine("Send called!");
                             output += args[0].ToSpagString().Value;
                             return SInt.One;
                          },
                          expectedArgs: new List<string>() { "msg" }));
 
+                // Query Args
+                SDictionary queryArgs = new();
+
+                foreach (var queryArg in context.Request.Query)
+                    queryArgs.Value.Add((new SString(queryArg.Key), new SString(queryArg.Value)));
+
+                interpreter.GlobalScope.Set("query", queryArgs);
+
+                // Body
+                if(context.Request.BodyReader.TryRead(out var bodyReadResult)) {
+                    interpreter.GlobalScope.Set(
+                        "bodyRaw",
+                        new SList(bodyReadResult.Buffer.ToArray()));
+
+                    interpreter.GlobalScope.Set(
+                        "bodyString",
+                        new SString(Encoding.UTF8.GetString(bodyReadResult.Buffer.ToArray())));
+
+
+                } else {
+                    interpreter.GlobalScope.Set("bodyRaw", new SList());
+                    interpreter.GlobalScope.Set("bodyString", new SString(""));
+                }
+
+                #endregion
                 Debug.WriteLine(spagToRun);
 
                 try {
